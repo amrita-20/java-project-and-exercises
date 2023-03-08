@@ -1,0 +1,16 @@
+.button
+{
+    -fx-background-color: #89CFF0;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #FFFFFF;
+    -fx-border-radius: 3;
+    -fx-font-size:14;
+}
+.root {
+  /*This applies styling for the root node*/
+    -fx-background-color: BEIGE;
+    -fx-padding: 20
+}
+.text {
+    -fx-font: normal bold 14px 'serif';
+}
