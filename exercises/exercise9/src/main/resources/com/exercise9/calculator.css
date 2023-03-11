@@ -1,0 +1,11 @@
+ AnchorPane{
+    -fx-background-color: #F5F5DC;
+ }
+ Pane{
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 15 15 15 15;
+ }
+ Button{
+    -fx-background-radius: 50%;
+    -fx-background-color: #89CFF0;
+ }

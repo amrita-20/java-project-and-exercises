@@ -7,10 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="exercise2_withFX" />
+        <module name="exercise9" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="exercise2_withFX" target="19" />
+      <module name="exercise9" target="19" />
     </bytecodeTargetLevel>
   </component>
 </project>
