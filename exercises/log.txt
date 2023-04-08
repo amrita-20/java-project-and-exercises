@@ -1,0 +1,2 @@
+Application is being initiated! 
+Application is ready to start! 
