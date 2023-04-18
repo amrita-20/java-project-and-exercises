@@ -13,15 +13,20 @@ import org.w3c.dom.*;
 import java.io.File;
 
 public class XMLParserExample {
-    public static void main(String... args){
-        try{
-            File file = new File("exercise8\\src\\main\\resources\\bookshelf.xml");
+    private Document doc;
+    private NodeList bookList;
+
+    //Create Method to parse XML file
+    public void parseXMLFromFile(String filePath) {
+        try {
+            File file = new File(filePath);
+            System.out.println(file.length());
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(file);
+            doc = db.parse(file);
             doc.getDocumentElement().normalize();
             System.out.println("Root Node: " + doc.getDocumentElement().getNodeName());
-            NodeList bookList = doc.getElementsByTagName("Book");
+            bookList = doc.getElementsByTagName("Book");
             for (int i = 0; i < bookList.getLength(); i++) {
                 Node book = bookList.item(i);
                 String title = book.getAttributes().getNamedItem("title").getTextContent();
@@ -33,13 +38,20 @@ public class XMLParserExample {
                 for (int j = 0; j < authorList.getLength(); j++) {
                     Node author = authorList.item(j);
                     if (author.getNodeType() == Node.ELEMENT_NODE) {
+                        //Used regex to format while reading authors name
                         String authorName = author.getTextContent().trim().replaceAll("(?<=\\S)\\s{2,}(?=\\S(?!\\s))", ", ");
                         System.out.println("Book: " + title + "\n number Of Pages: " + numberOfPages + "\n published Year: " +
                                 publishedYear + "\n Authors: " + authorName + "\n");
                     }
                 }
             }
+        }catch (Exception e){
+            System.out.println("Error occurred: " +e.getMessage());
+        }
+    }
 
+    public void addNewEntry(String filePath){
+        try{
             // Create a new book element
             Element newBook = doc.createElement("Book");
             Attr title = doc.createAttribute("title");
@@ -70,10 +82,24 @@ public class XMLParserExample {
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             DOMSource source = new DOMSource(doc);
-            StreamResult result = new StreamResult(new File("exercise8\\src\\main\\resources\\bookshelf.xml"));
+            StreamResult result = new StreamResult(new File(filePath));
             transformer.transform(source, result);
         }catch (Exception e){
             System.out.println("Error occurred: " +e.getMessage());
+        }
+    }
+    public static void main(String... args){
+        /*
+            Provide XML file Path
+            Create object of XMLParser class
+            And then call the parser method
+         */
+        String filePath = "exercise8\\src\\main\\resources\\bookshelf.xml";
+        XMLParserExample xmlParserExample = new XMLParserExample();
+        xmlParserExample.parseXMLFromFile(filePath);
+        //Check if new entry is added already or not
+        if(xmlParserExample.bookList.getLength() < 4){
+            xmlParserExample.addNewEntry(filePath);
         }
     }
 }

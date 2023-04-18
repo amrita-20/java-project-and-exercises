@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Bookshelf>
+        
+    <Book numberOfPages="320" publishedYear="2019" title="Atomic Habits">
+        <authors>
+            <author>James Clear</author>
+            <author>Dale Carnegie</author>
+        </authors>
+    </Book>
+        
+    <Book numberOfPages="340" publishedYear="2020" title="Deep Work">
+        <authors>
+            <author>Cal NewPort</author>
+            <author>Seth Godin</author>
+        </authors>
+    </Book>
+        
+    <Book numberOfPages="330" publishedYear="2010" title="How to win friends and influence people">
+        <authors>
+            <author>Dale Carnegie</author>
+            <author>Jumpa</author>
+        </authors>
+    </Book>
+    
+    <Book numberOfPages="216" publishedYear="2018" title="Life's amazing secrets">
+        <authors>
+            <author>Gaur Gopal Das</author>
+            <author>Hari Charan Das</author>
+        </authors>
+    </Book>
+</Bookshelf>
