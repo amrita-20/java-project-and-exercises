@@ -1,20 +1,20 @@
 .button
 {
-    -fx-background-color: #89CFF0;
+    -fx-background-color: #3E54AC;
     -fx-text-fill: #FFFFFF;
-    -fx-border-color: #FFFFFF;
-    -fx-border-radius: 3;
+    -fx-background-radius: 15;
     -fx-font-size:14;
-    -fx-width: 50px;
+    -fx-pref-width: 200px;
+    -fx-pref-height: 30px;
+
 }
 Pane {
     -fx-background-color: #FFFFFF;
-    -fx-width: 150px;
-    -fx-height: 150px;
+    -fx-width: 200px;
+    -fx-height: 200px;
 }
 .root {
-  /*This applies styling for the root node*/
-    -fx-background-color: BEIGE;
+    -fx-background-color: #C9EEFF;
     -fx-padding: 20
 }
 .text {

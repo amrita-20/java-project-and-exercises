@@ -6,43 +6,38 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingFXUtils;
-import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
-import org.tensorflow.TensorFlow;
-
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.RandomAccessFile;
+
 
 public class NumberDrawGUI extends Application {
 
     private Canvas drawingCanvas;
     private GraphicsContext gc;
     private boolean isDrawing = false;
-    Text text1 = new Text("Predicted No : ");
-   // Label label =new Label("Predicted No:");
+    Text predictedDigitText = new Text();
+    Button clearButton = new Button("Clear");
+    Button predictWithSimpleRecognizer = new Button("Simple Prediction");
+    Button predictWithComplexRecognizer = new Button("Convoluted Prediction");
+    File file;
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Number Drawing GUI");
+        primaryStage.setTitle("Number Recognizer");
 
-        drawingCanvas = new Canvas(150, 150);
+        drawingCanvas = new Canvas(200, 200);
         gc = drawingCanvas.getGraphicsContext2D();
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
@@ -67,84 +62,93 @@ public class NumberDrawGUI extends Application {
         drawingCanvas.addEventHandler(MouseEvent.MOUSE_RELEASED, (e) -> {
             isDrawing = false;
         });
-        Button clearButton = new Button("Clear");
+
+        //clear the drawn number and predicted values
         clearButton.setOnAction(event -> {
             gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
-            text1.setText("");
+            predictedDigitText.setText("");
+            if(file != null && file.exists()){
+                file.delete();
+            }
         });
 
-        Button saveButton = new Button("Predict");
-        saveButton.setOnAction(event -> {
-            WritableImage image = drawingCanvas.snapshot(new SnapshotParameters(), null);
-            File file = new File("image.png");
-            try {
-                ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
-                getModel();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            //WritableImage image = drawingCanvas.snapshot(new SnapshotParameters(), null);
-           // PixelReader pixelReader = (PixelReader) image.getPixelWriter();
+        //Call simple prediction model
+        predictWithSimpleRecognizer.setOnAction(event -> {
+            getModel("SIMPLE");
+        });
+
+        // call convoluted prediction model
+        predictWithComplexRecognizer.setOnAction(event -> {
+           getModel("COMPLEX");
         });
 
         GridPane root = new GridPane();
         Pane pane = new Pane();
         pane.getChildren().add(drawingCanvas);
         ColumnConstraints column1 = new ColumnConstraints();
-        column1.setPercentWidth(60);
+        column1.setPercentWidth(50);
         ColumnConstraints column2 = new ColumnConstraints();
-        column2.setPercentWidth(40);
+        column2.setPercentWidth(50);
         root.getColumnConstraints().addAll(column1, column2);
         root.setVgap(20);
         root.setHgap(20);
-        root.addRow(0, pane, text1);
-        root.addRow(1, clearButton);
-        root.addRow(1, saveButton);
+        root.addRow(0, pane, predictedDigitText);
+        root.addRow(1, predictWithSimpleRecognizer);
+        root.addRow(2, predictWithComplexRecognizer);
+        root.addRow(3, clearButton);
 
         //StackPane root = new StackPane(drawingCanvas, saveButton);
-        Scene scene = new Scene(root, 500, 500);
+        Scene scene = new Scene(root, 500, 400);
         scene.getStylesheets().add("/style.css");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    public void getModel() throws Exception{
-        System.out.println("TensorFlow version " + TensorFlow.version());
-        SavedModelBundle model = SavedModelBundle.load("D:\\Amrita_NEU\\AED\\digit_recognition_model", "serve");
-        Session session = model.session();
+    /*
+        Get the snapshot of drawn number on canvas
+        save snapshot as a png file
+        and then call the model based on passed model type
+     */
+    public void getModel(String modelType) {
+        WritableImage image = drawingCanvas.snapshot(new SnapshotParameters(), null);
+        PixelReader pixelReader = image.getPixelReader();
+        file = new File("image.png");
+        try {
+            if (isCanvasEmpty(drawingCanvas, pixelReader)) {
+                predictedDigitText.setText("Please draw a digit then try");
+            }else{
+                ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
+                NumberRecognizer numberRecognizer = NumberRecognizerFactory.getModel(modelType);
+                int predictedDigit = numberRecognizer.recognizeNumber();
+                System.out.println("Predicted digit: " + predictedDigit);
+                predictedDigitText.setText("Predicted digit: " + predictedDigit);
+                predictedDigitText.setFont(Font.font("Verdana", 20));
+                predictedDigitText.setFill(Color.BLUE);
+            }
+//                System.out.println(file.length());
+//                BufferedImage bi = ImageIO.read(file);
+//                System.out.println("Image width: " + bi.getWidth() + ", height: " + bi.getHeight());
 
-//        float[][] inputData = {{2.5f, 67.0f}, {87}}; // Your input data
-         float[] inputData = ImageUtils.loadImage("image.png");
-        /*BufferedImage image = ImageIO.read(new File("image.png"));
+        } catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+        }
 
-        // Resize the image
-        int width = 28;
-        int height = 28;
-        BufferedImage resizedImage = ImagePreprocessor.resize(image, width, height);
-
-        // Convert the image to grayscale
-        BufferedImage grayscaleImage = ImagePreprocessor.toGrayscale(resizedImage);
-
-        // Flatten the image
-        float[] flattenedImage = ImagePreprocessor.flatten(grayscaleImage);
-*/
-
-        Tensor inputTensor = Tensor.create(inputData, Float.class);
-
-        Tensor<Float> outputTensor = session.runner()
-                .feed("serving_default_flatten_input", inputTensor)
-                .fetch("StatefulPartitionedCall")
-                .run()
-                .get(0)
-                .expect(Float.class);
-
-//        float[][] outputData = new float[][]; // Shape of output tensor
-//        outputTensor.copyTo(outputData);
-        float[] output = outputTensor.copyTo(new float[1][10])[0];
-        int predictedDigit = argmax(output);
-        System.out.println("Predicted digit: " + predictedDigit);
-        text1.setText(String.valueOf(predictedDigit));
     }
+
+    public static boolean isCanvasEmpty(Canvas canvas, PixelReader pixelReader) {
+        int width = (int) canvas.getWidth();
+        int height = (int) canvas.getHeight();
+       // PixelReader pixelReader = canvas.snapshot(null, null).getPixelReader();
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                if (pixelReader.getColor(x, y).getOpacity() != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
    /* private static int argmax(float[] array) {
         int maxIndex = 0;
         float maxValue = Float.NEGATIVE_INFINITY;
@@ -156,19 +160,8 @@ public class NumberDrawGUI extends Application {
         }
         return maxIndex;
     }*/
-    public static int argmax(float[] array) {
-        int maxIndex = 0;
-        double maxValue = array[0];
-        for (int i = 1; i < array.length; i++) {
-            if (array[i] > maxValue) {
-                maxIndex = i;
-                maxValue = array[i];
-            }
-        }
-        return maxIndex;
-    }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         launch(args);
     }
 
