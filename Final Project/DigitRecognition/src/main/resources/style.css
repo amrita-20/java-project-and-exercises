@@ -8,10 +8,14 @@
     -fx-pref-height: 30px;
 
 }
+.label {
+    -fx-font: normal bold 18px 'serif';
+    -fx-text-fill: blue;
+}
 Pane {
     -fx-background-color: #FFFFFF;
-    -fx-width: 200px;
-    -fx-height: 200px;
+    -fx-width: 280px;
+    -fx-height: 280px;
 }
 .root {
     -fx-background-color: #C9EEFF;

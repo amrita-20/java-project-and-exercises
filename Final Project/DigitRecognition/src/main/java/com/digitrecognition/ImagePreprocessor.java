@@ -1,73 +1,102 @@
 package com.digitrecognition;
 
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.Graphics;
+import java.awt.image.DataBufferByte;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 
-import javax.imageio.ImageIO;
 
 public class ImagePreprocessor {
+    /**
+     * Created class for preprocessing drawn numbers
+     */
+    private final BufferedImage bufferedImage;
+    private final float[][] pixelArray;
+    private final int row;
+    private final int col;
+    /**
+     * Image boundaries along X-axis and Y-axis
+     */
+    private int minX;
+    private int minY;
+    private int maxX;
+    private int maxY;
 
-    public static float[][][][] preprocessImage(String filePath) throws IOException {
-        // Load the image from file
-        BufferedImage inputImage = ImageIO.read(new File(filePath));
-
-        // Resize the image to 28x28 pixels
-        BufferedImage resizedImage = new BufferedImage(28, 28, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = resizedImage.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g.drawImage(inputImage, 0, 0, 28, 28, null);
-        g.dispose();
-
-        // Convert the resized image to grayscale
-        BufferedImage grayscaleImage = new BufferedImage(28, 28, BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D g2 = grayscaleImage.createGraphics();
-        g2.drawImage(resizedImage, 0, 0, null);
-        g2.dispose();
-
-        // Convert the grayscale image to a float array
-        float[][][][] input = new float[1][28][28][1];
-        for (int i = 0; i < 28; i++) {
-            for (int j = 0; j < 28; j++) {
-                int pixel = grayscaleImage.getRGB(j, i);
-                float gray = ((pixel & 0xff) + ((pixel >> 8) & 0xff) + ((pixel >> 16) & 0xff)) / 3.0f;
-                input[0][i][j][0] = gray / 255.0f;
-            }
-        }
-
-        return input;
+    ImagePreprocessor(BufferedImage bufferedImage){
+        this.bufferedImage = bufferedImage;
+        col = bufferedImage.getWidth();
+        row = bufferedImage.getHeight();
+        pixelArray = get2DArray(bufferedImage);
     }
-    public static float[] loadImage(String imagePath) throws Exception {
-        // load image file
-        BufferedImage image = ImageIO.read(new File(imagePath));
 
-        // resize image to 28x28
-        BufferedImage resizedImage = new BufferedImage(28, 28, BufferedImage.TYPE_INT_ARGB);
-        resizedImage.getGraphics().drawImage(image, 0, 0, 28, 28, null);
-
-        // convert image to grayscale and normalize pixel values
-        float[] input = new float[28 * 28];
-        for (int i = 0; i < 28; i++) {
-            for (int j = 0; j < 28; j++) {
-                int rgb = resizedImage.getRGB(j, i);
-                int gray = (int) (0.2989 * ((rgb >> 16) & 0xff) + 0.5870 * ((rgb >> 8) & 0xff) + 0.1140 * (rgb & 0xff));
-                input[i * 28 + j] = 1.0f - (gray / 255.0f);
+    public float[][] get2DArray(BufferedImage img) {
+        /**
+         * Transform the image to a 2D array
+         */
+        float[][] pixelArray = new float[row][col];
+        byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < col; j++) {
+                pixelArray[i][j] = (float) (pixels[i * row + j] & 0xFF);
             }
         }
-
-        return input;
+        return pixelArray;
     }
-    public static int argmax(float[] array) {
-        int maxIndex = 0;
-        double maxValue = array[0];
-        for (int i = 1; i < array.length; i++) {
-            if (array[i] > maxValue) {
-                maxIndex = i;
-                maxValue = array[i];
+
+    /**
+     * Created method to get image boundaries along X-axis and Y-axis
+     * (ignoring noise points by a pixel magnitude of threshold (0.01f))
+     */
+    public void calculateBoundary(float threshold) {
+        minX = col;
+        minY = row;
+        maxX = -1;
+        maxY = -1;
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < col; j++) {
+                if (pixelArray[i][j] < threshold * 255f) {
+                    minX = minX > j ? j : minX;
+                    maxX = maxX < j ? j : maxX;
+                    minY = minY > i ? i : minY;
+                    maxY = maxY < i ? i : maxY;
+                }
             }
         }
-        return maxIndex;
+        if (maxX < 0) {
+            // when a whole white image
+            minX = maxX = col/2;
+            minY = maxY = row/2;
+        }
+    }
+
+    /**
+     * @method Created method to resize and center the drawn number
+     * @param scaledLength
+     * @param threshold
+     * @return resized centred image
+     */
+    public BufferedImage getScaledCenterImage(int scaledLength, float threshold) {
+        calculateBoundary(threshold);
+        // Get length of bounding box
+        int bndX = maxX - minX + 1;
+        int bndY = maxY - minY + 1;
+        int bndLength = bndX > bndY ? bndX : bndY;
+
+        // Calculate scale factor and corresponding new width and height
+        float scaleFactor = scaledLength / (float) bndLength;
+        int scaledWidth = (int)(bndX * scaleFactor);
+        int scaledHeight = (int)(bndY * scaleFactor);
+
+        // Crop image by estimated boundary box
+        BufferedImage croppedImage = bufferedImage.getSubimage(minX, minY, bndX, bndY);
+        BufferedImage scaledCenterImage = new BufferedImage(col, row, BufferedImage.TYPE_BYTE_GRAY);
+        Graphics graphics = scaledCenterImage.getGraphics();
+        graphics.setColor(java.awt.Color.WHITE);
+        graphics.fillRect(0,0, col, row);
+
+        // Re-draw cropped image with re-sizing
+        graphics.drawImage(croppedImage, (col-scaledWidth)/2, (row-scaledHeight)/2, scaledWidth, scaledHeight,null);
+        graphics.dispose();
+
+        return scaledCenterImage;
     }
 }

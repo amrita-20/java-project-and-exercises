@@ -1,5 +1,5 @@
 package com.digitrecognition;
 
 public interface NumberRecognizer {
-    int recognizeNumber();
+    int recognizeNumber(String imagePath);
 }
